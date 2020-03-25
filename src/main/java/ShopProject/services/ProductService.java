@@ -26,7 +26,7 @@ public class ProductService {
         return productDao.create(t);
     }
 
-    public Product read (int id){
+    public Optional<Product> read (int id){
         return productDao.read(id);
     }
 
@@ -38,7 +38,7 @@ public class ProductService {
         productDao.delete(id);
     }
 
-    public List<Product> readAll (){
+    public Optional<List<Product>> readAll (){
         return productDao.readAll();
     }
 }

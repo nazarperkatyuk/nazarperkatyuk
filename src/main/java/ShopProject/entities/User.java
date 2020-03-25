@@ -16,6 +16,7 @@ public class User {
     private String role;
     private String password;
 
+    //ToDo Builder pattern
     public User(int id, String firstName, String lastName, String email, String role, String password) {
         this.id = id;
         this.firstName = firstName;
@@ -35,6 +36,7 @@ public class User {
 
     public static User of(ResultSet resultSet) {
         try {
+
             int id = resultSet.getInt("id");
             String firstName = resultSet.getString("first_name");
             String lastName = resultSet.getString("last_name");
@@ -113,6 +115,11 @@ public class User {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(id, firstName, lastName, email, role, password);
+    }
+
+    @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
@@ -122,9 +129,5 @@ public class User {
                 ", role='" + role + '\'' +
                 ", password='" + password + '\'' +
                 '}';
-    }
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, firstName, lastName, email, role, password);
     }
 }
