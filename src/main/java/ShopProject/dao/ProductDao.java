@@ -1,120 +1,129 @@
 package ShopProject.dao;
 
-import ShopProject.entities.Product;
-import org.apache.log4j.Logger;
-import ShopProject.ConnectionUtil;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import ShopProject.ConnectionUtil;
+import ShopProject.entities.Product;
 
 public class ProductDao implements CRUD<Product> {
-    private static final Logger log = Logger.getLogger(ProductDao.class);
-    private Connection connection;
-
-    public ProductDao() {
-        this.connection = ConnectionUtil.getConnection();
-    }
-
-    private static String SELECT_ALL = "select * from products";
+    private static String READ_ALL = "select * from products";
+    private static String READ_ALL_IN = "select * from products where id in ";
     private static String CREATE = "insert into products(`name`, `description`, `price`) values (?,?,?)";
     private static String READ_BY_ID = "select * from products where id =?";
     private static String UPDATE_BY_ID = "update products set name=?, description = ?, price = ? where id = ?";
     private static String DELETE_BY_ID = "delete from products where id=?";
 
+    private Connection connection;
+    private PreparedStatement preparedStatement;
 
-    @Override
-    public Product create(Product product) {
-        log.trace("Creating new product...");
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(CREATE, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setString(1, product.getName());
-            preparedStatement.setString(2, product.getDescription());
-            preparedStatement.setFloat(3, product.getPurchasePrice());
-            preparedStatement.setInt(4, product.getId());
-            preparedStatement.executeUpdate();
-
-            String infoCreate = String.format("Created a new product in database with id=%d, name=%s",
-                    product.getId(), product.getName());
-            log.info(infoCreate);
-
-            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-            generatedKeys.next();
-            product.setId(generatedKeys.getInt(1));
-
-            return product;
-        } catch (SQLException e) {
-            log.error("Can`t create new user", e);
-        }
-        return null;
+    public ProductDao() {
+        connection = ConnectionUtil.getConnection();
     }
 
     @Override
-    public Optional<Product> read(int id) {
-        log.trace("Reading product by id...");
+    public Product create(Product product) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(READ_BY_ID);
-            preparedStatement.setInt(1, id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()){
-                return Optional.of(Product.of(resultSet));
-            }
+            preparedStatement = connection.prepareStatement(CREATE, Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setString(1, product.getName());
+            preparedStatement.setString(2, product.getDescription());
+            preparedStatement.setDouble(3, product.getPrice());
+            preparedStatement.executeUpdate();
+
+            ResultSet rs = preparedStatement.getGeneratedKeys();
+            rs.next();
+            product.setId(rs.getInt(1));
         } catch (SQLException e) {
-            String errorReadById = String.format("Can`t read product with id = %s", id);
-            log.error(errorReadById, e);
+            e.printStackTrace();
         }
-        return Optional.empty();
+
+        return product;
+    }
+
+    @Override
+    public Product read(int id) {
+        Product product = null;
+        try {
+            preparedStatement = connection.prepareStatement(READ_BY_ID);
+            preparedStatement.setInt(1, id);
+            ResultSet result = preparedStatement.executeQuery();
+            result.next();
+            product = Product.of(result);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return product;
     }
 
     @Override
     public void update(Product product) {
-        log.trace("Updating зкщвгсе...");
+
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_BY_ID);
+            preparedStatement = connection.prepareStatement(UPDATE_BY_ID);
             preparedStatement.setString(1, product.getName());
             preparedStatement.setString(2, product.getDescription());
-            preparedStatement.setFloat(3, product.getPurchasePrice());
+            preparedStatement.setDouble(3, product.getPrice());
             preparedStatement.setInt(4, product.getId());
             preparedStatement.executeUpdate();
-
-            String infoUpdate = String.format("Product with id = %d was updated to product with name = %d",
-                    product.getId(), product.getName());
-            log.info(infoUpdate);
-
         } catch (SQLException e) {
-            log.error("Can`t update product", e);
+            e.printStackTrace();
         }
     }
 
     @Override
     public void delete(int id) {
-        log.trace("Deleting product...");
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(DELETE_BY_ID);
+            preparedStatement = connection.prepareStatement(DELETE_BY_ID);
             preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            log.error("Can`t delete user by id", e);
+            e.printStackTrace();
         }
     }
 
     @Override
-    public Optional<List<Product>> readAll() {
-        log.trace("Reading all products from DB...");
+    public List<Product> readAll() {
+        List<Product> productRecords = new ArrayList<>();
         try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(SELECT_ALL);
-
-            List<Product> products = new ArrayList<>();
-            while (resultSet.next()) {
-                products.add(Product.of(resultSet));
+            preparedStatement = connection.prepareStatement(READ_ALL);
+            ResultSet result = preparedStatement.executeQuery();
+            while (result.next()) {
+                productRecords.add(Product.of(result));
             }
-            Optional<List<Product>> optionalProducts = Optional.ofNullable(products);
-            return optionalProducts;
         } catch (SQLException e) {
-            log.error("Can`t read all products", e);
+            e.printStackTrace();
         }
-        return Optional.empty();
+
+        return productRecords;
+    }
+
+    public List<Product> readByIds(Set<Integer> productIds) {
+        List<Product> productRecords = new ArrayList<>();
+        try {
+
+            String ids = productIds.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+
+            String query = String.format("%s (%s)", READ_ALL_IN, ids);
+            preparedStatement = connection.prepareStatement(query);
+
+            ResultSet result = preparedStatement.executeQuery();
+            while (result.next()) {
+                productRecords.add(Product.of(result));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return productRecords;
     }
 }

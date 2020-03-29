@@ -43,8 +43,10 @@ $("button.register")
             }
         });
 
+
 $("button.login").click(function (event) {
     event.preventDefault();
+
     var email = $("form.login-form input.logEmail").val();
     var password = $("form.login-form input.loginPass").val();
 
@@ -58,13 +60,13 @@ $("button.login").click(function (event) {
         $.post("login", userLogin)
             .done(function (data, textStatus, xhr) {
                 if (xhr.status === 200) {
-                    window.location = "http://localhost:8081/IShop/cabinet.jsp";
+                    window.location = window.origin + "/ShopProduct/cabinet";
                 } else {
                     alert("error while authorizing the user");
                 }
             })
             .fail(function () {
-                alert("error while authorizing the user");
+                alert("user does not exist");
             });
     }
 });

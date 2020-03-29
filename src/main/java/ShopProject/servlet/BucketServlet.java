@@ -1,25 +1,20 @@
 package ShopProject.servlet;
 
-import java.util.Date;
+import java.io.IOException;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ShopProject.entities.Bucket;
-import ShopProject.services.BucketService;
-
-@WebServlet("/api/buckets")
-public class BucketController extends HttpServlet {
-
-    private BucketService bucketService = BucketService.getInstance();
+@WebServlet("/bucket")
+public class BucketServlet extends HttpServlet {
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
-        String productId = req.getParameter("productId");
-        int userId = (int) req.getSession().getAttribute("userId");
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
 
-        bucketService.create(new Bucket(userId, Integer.parseInt(productId), new Date()));
+        request.getRequestDispatcher("bucket.jsp").forward(request, response);
     }
 }

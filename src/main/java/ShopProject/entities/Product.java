@@ -2,41 +2,31 @@ package ShopProject.entities;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Objects;
 
 public class Product {
-
-    private int id;
+    private Integer id;
     private String name;
     private String description;
-    private float purchasePrice;
+    private Double price;
 
-    public Product(int id, String name, String description, float purchasePrice) {
+    public Product(Integer id, String name, String description, Double price) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.purchasePrice = purchasePrice;
+        this.price = price;
     }
 
-    public static Product of (ResultSet resultSet){
-        try {
-            int id = resultSet.getInt("id");
-            String name = resultSet.getString("name");
-            String description = resultSet.getString("description");
-            Float purchasePrice = resultSet.getFloat("purchase_price");
-
-            return new Product(id, name, description, purchasePrice);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error");
-        }
+    public Product(String name, String description, Double price) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -56,37 +46,71 @@ public class Product {
         this.description = description;
     }
 
-    public float getPurchasePrice() {
-        return purchasePrice;
+    public Double getPrice() {
+        return price;
     }
 
-    public void setPurchasePrice(float purchasePrice) {
-        this.purchasePrice = purchasePrice;
+    public void setPrice(Double price) {
+        this.price = price;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Product product = (Product) o;
-        return id == product.id &&
-                Float.compare(product.purchasePrice, purchasePrice) == 0 &&
-                Objects.equals(name, product.name) &&
-                Objects.equals(description, product.description);
+    public static Product of(ResultSet result) {
+        try {
+            Integer productId = result.getInt("id");
+            String name = result.getString("name");
+            String description = result.getString("description");
+            Double purchasePrice = result.getDouble("price");
+            return new Product(productId, name, description, purchasePrice);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error");
+        }
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, purchasePrice);
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((price == null) ? 0 : price.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Product other = (Product) obj;
+        if (description == null) {
+            if (other.description != null)
+                return false;
+        } else if (!description.equals(other.description))
+            return false;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        if (name == null) {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
+        if (price == null) {
+            if (other.price != null)
+                return false;
+        } else if (!price.equals(other.price))
+            return false;
+        return true;
     }
 
     @Override
     public String toString() {
-        return "Product{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", purchasePrice=" + purchasePrice +
-                '}';
+        return "Product [id=" + id + ", name=" + name + ", description=" + description + ", price=" + price + "]";
     }
 }

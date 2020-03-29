@@ -1,16 +1,18 @@
 package ShopProject.services;
 
-import ShopProject.dao.UserDao;
-import ShopProject.entities.User;
-
 import java.util.List;
 import java.util.Optional;
 
+import ShopProject.dao.UserDao;
+import ShopProject.entities.User;
+
 public class UserService {
-    private static UserService userService;
+
     private UserDao userDao;
 
-    public UserService() {
+    private static UserService userService;
+
+    private UserService() {
         this.userDao = new UserDao();
     }
 
@@ -21,27 +23,37 @@ public class UserService {
         return userService;
     }
 
-    public User create(User t) {
-        return userDao.create(t);
+    public void create(String email, String firstName, String lastName, String password) {
+        userDao.create(
+                User.builder()
+                        .setEmail(email)
+                        .setFirstName(firstName)
+                        .setLastName(lastName)
+                        .setPassword(password)
+                        .build());
     }
 
-    public Optional<User> readById(int id) {
+    public User read(int id) {
         return userDao.read(id);
-    }
-
-    public Optional<User> readByEmail(String email) {
-        return userDao.readByEmail(email);
     }
 
     public void update(User t) {
         userDao.update(t);
     }
 
-    public void delete(int id) {
+    public void delete(Integer id) {
         userDao.delete(id);
     }
 
-    public Optional<List<User>> readAll() {
+    public List<User> readAll() {
         return userDao.readAll();
+    }
+
+    public Optional<User> getByEmail(String email) {
+        return userDao.getByEmail(email);
+    }
+
+    public Optional<User> getByEmailAndPassword(String email, String password) {
+        return userDao.getByEmail(email).filter(user -> user.getPassword().equals(password));
     }
 }

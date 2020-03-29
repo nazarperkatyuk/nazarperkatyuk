@@ -1,123 +1,124 @@
 package ShopProject.dao;
 
-import ShopProject.entities.Bucket;
-import ShopProject.entities.User;
-import org.apache.log4j.Logger;
-import ShopProject.ConnectionUtil;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public class BucketDao implements CRUD <Bucket> {
-    private static final Logger log = Logger.getLogger(BucketDao.class);
+import org.apache.log4j.Logger;
+
+import ShopProject.ConnectionUtil;
+import ShopProject.entities.Bucket;
+
+public class BucketDao implements CRUD<Bucket> {
+    private static final Logger LOG = Logger.getLogger(BucketDao.class);
+
+    private static String READ_ALL = "select * from buckets";
+    private static String READ_ALL_BY_USER_ID = "select * from buckets where user_id = ?";
+    private static String CREATE = "insert into buckets(`user_id`, `product_id`, `purchase_date`) values (?,?,?)";
+    private static String READ_BY_ID = "select * from buckets where id=?";
+    private static String DELETE_BY_ID = "delete from buckets where id=?";
+
     private Connection connection;
+    private PreparedStatement preparedStatement;
 
     public BucketDao() {
-        this.connection = ConnectionUtil.getConnection();
+        connection = ConnectionUtil.getConnection();
     }
 
-    public static final String SELECT_ALL = "SELECT * FROM buckets";
-    public static final String DELETE = "DELETE FROM buckets where id = ?";
-    public static final String UPDATE = "UPDATE buckets SET user_id = ?, product_id = ?, purchase_date = ? where id = ?";
-    public static final String SELECT_BY_ID = "SELECT * FROM buckets where id = ?";
-    public static final String INSERT_INTO =
-            "INSERT INTO buckets(user_id, product_id, purchase_date) values(?, ?, ?)";
     @Override
     public Bucket create(Bucket bucket) {
-        log.trace("Creating new bucket...");
+        String message = String.format("Will create a bucket for userId=%d and productId=%d",
+                bucket.getUserId(), bucket.getProductId());
+        LOG.debug(message);
+
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(INSERT_INTO, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setInt(1, bucket.getUser_id());
-            preparedStatement.setInt(2, bucket.getProduct_id());
-            preparedStatement.setDate(3, (Date) bucket.getPurchase_date());
+            preparedStatement = connection.prepareStatement(CREATE, Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setInt(1, bucket.getUserId());
+            preparedStatement.setInt(2, bucket.getProductId());
+            preparedStatement.setDate(3, new Date(bucket.getPurchaseDate().getTime()));
             preparedStatement.executeUpdate();
 
-            String infoCreate = String.format("Created a new bucket in database with user_id=%d, product_id=%d",
-                    bucket.getUser_id(), bucket.getProduct_id());
-            log.info(infoCreate);
-
-            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-            generatedKeys.next();
-            bucket.setId(generatedKeys.getInt(1));
-
-            return bucket;
+            ResultSet rs = preparedStatement.getGeneratedKeys();
+            rs.next();
+            bucket.setId(rs.getInt(1));
         } catch (SQLException e) {
-            log.error("Can`t create new user", e);
+            String errorMessage = String.format("Fail to create a bucket for userId=%d and productId=%d",
+                    bucket.getUserId(), bucket.getProductId());
+            LOG.error(errorMessage, e);
         }
-        return null;
+        return bucket;
     }
 
     @Override
-    public Optional<Bucket> read(int id) {
+    public Bucket read(int id) {
+        Bucket bucket = null;
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(SELECT_BY_ID);
+            preparedStatement = connection.prepareStatement(READ_BY_ID);
             preparedStatement.setInt(1, id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()){
-                return Optional.of(Bucket.of(resultSet));
-            }
+            ResultSet result = preparedStatement.executeQuery();
+            result.next();
+
+            bucket = Bucket.of(result);
         } catch (SQLException e) {
-            String errorReadById = String.format("Can`t read bucket with id = %s", id);
-            log.error(errorReadById, e);
+            String errorMessage = String.format("Fail to get a bucket with id=%d", id);
+            LOG.error(errorMessage, e);
         }
-        return Optional.empty();
+
+        return bucket;
     }
 
     @Override
-    public void update(Bucket bucket) {
-        log.trace("Updating bucket...");
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(UPDATE);
-            preparedStatement.setInt(1, bucket.getUser_id());
-            preparedStatement.setInt(2, bucket.getProduct_id());
-            preparedStatement.setDate(3, (Date) bucket.getPurchase_date());
-            preparedStatement.setInt(4, bucket.getId());
-            preparedStatement.executeUpdate();
-
-            String infoUpdate = String.format("Bucket with id = %d was updated to bucket with user_id=%d, product_id=%d",
-                    bucket.getUser_id(), bucket.getProduct_id());
-            log.info(infoUpdate);
-
-        } catch (SQLException e) {
-            log.error("Can`t update user", e);
-        }
+    public void update(Bucket t) {
+        throw new IllegalStateException("there is no update for bucket");
     }
 
     @Override
     public void delete(int id) {
-        log.trace("Deleting backet...");
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(DELETE);
+            preparedStatement = connection.prepareStatement(DELETE_BY_ID);
             preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            log.error("Can`t delete user by id", e);
+            e.printStackTrace();
         }
     }
 
     @Override
-    public Optional<List<Bucket>> readAll() {
-        log.trace("Reading all buckets from DB...");
+    public List<Bucket> readAll() {
+
+        List<Bucket> bucketRecords = new ArrayList<>();
         try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(SELECT_ALL);
-
-            List<Bucket> buckets = new ArrayList<>();
-            while (resultSet.next()) {
-                buckets.add(Bucket.of(resultSet));
+            preparedStatement = connection.prepareStatement(READ_ALL);
+            ResultSet result = preparedStatement.executeQuery();
+            while (result.next()) {
+                bucketRecords.add(Bucket.of(result));
             }
-            Optional<List<Bucket>> optionalBuckets = Optional.ofNullable(buckets);
-            return optionalBuckets;
         } catch (SQLException e) {
-            log.error("Can`t read all buckets", e);
+            e.printStackTrace();
         }
-        return Optional.empty();
+
+        return bucketRecords;
     }
 
-    @Override
-    public Optional<User> readByEmail(String email) {
-        return Optional.empty();
+    public List<Bucket> readAllByUserId(int userId) {
+
+        List<Bucket> bucketRecords = new ArrayList<>();
+        try {
+            preparedStatement = connection.prepareStatement(READ_ALL_BY_USER_ID);
+            preparedStatement.setInt(1, userId);
+            ResultSet result = preparedStatement.executeQuery();
+            while (result.next()) {
+                bucketRecords.add(Bucket.of(result));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return bucketRecords;
     }
 }

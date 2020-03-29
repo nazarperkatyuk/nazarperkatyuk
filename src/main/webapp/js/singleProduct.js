@@ -5,7 +5,7 @@ $("button.add-to-bucket").click(function (event) {
 
     $.post("api/buckets", {productId})
         .done(function () {
-            alert("Product is being successfully added to bucket");
+            alert("Product  added to bucket");
         })
         .fail(function () {
             alert("error");
